@@ -10,6 +10,7 @@ from tqdm import tqdm
 from keras.optimizers import Adam
 from util.data import TwoImageIterator
 from util.util import MyDict, log, save_weights, load_weights, load_losses, create_expt_dir
+from keras import backend as K
 
 
 def print_help():
@@ -344,6 +345,11 @@ def train(models, it_train, it_val, params):
                 log_dir=params.log_dir, expt_name=params.expt_name)
 
 if __name__ == '__main__':
+    
+    global graph1
+    global graph2
+    # https://github.com/keras-team/keras/issues/2397
+    
     a = sys.argv[1:]
 
     params = MyDict({
@@ -419,9 +425,11 @@ if __name__ == '__main__':
     if not params.pix2pix:
         vae = m.g_vae(params.a_ch, params.a_ch, params.nfatoa, params.latent_dim,
                       is_binary=params.is_a_binary)
+    graph1 = K.get_session().graph
 
     # Define the discriminator
     d = m.discriminator(params.a_ch, params.b_ch, params.nfd, opt=dopt)
+    graph2 = K.get_session().graph
 
     if params.continue_train:
         load_weights(vae, unet, d, log_dir=params.log_dir, expt_name=params.expt_name)
