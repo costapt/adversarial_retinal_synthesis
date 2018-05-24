@@ -8,6 +8,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Activation, Flatten, Reshape, Dropout
 from keras.layers.convolutional import Convolution2D, Deconvolution2D, UpSampling2D
+import numpy as np
 
 
 def Convolution(f, k=3, s=2, border_mode='same', **kwargs):
@@ -489,7 +490,7 @@ def pix2pix2pix(vae, atob, d, code_d, a_ch, b_ch, alpha=100, beta=100, is_a_bina
         else:
             L_atob = K.mean(K.abs(b_flat - bp_flat))
 
-        L_code = objectives.binary_crossentropy(1, code_d(z))
+        L_code = objectives.binary_crossentropy(np.asarray(1).astype('float32').reshape((-1, 1)), code_d(z))
 
         return L_adv + beta*L_atoa + alpha*L_atob + L_code
 
