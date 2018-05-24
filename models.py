@@ -229,8 +229,8 @@ def g_vae(in_ch, out_ch, nf, latent_dim, is_binary=False, name='vae'):
 
     def sampling(args):
         z_mean, z_log_var = args
-        epsilon = K.random_normal(shape=(z_mean.shape[0], latent_dim),
-                                  mean=0., std=1.)
+        batch_size = K.shape(z_mean)[0]
+        epsilon = K.random_normal(shape=(batch_size, latent_dim), mean=0., std=1.)
         return z_mean + K.exp(z_log_var / 2) * epsilon
 
     z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
