@@ -10,7 +10,7 @@ from keras.layers.core import Activation, Flatten, Reshape, Dropout
 from keras.layers.convolutional import Convolution2D, Deconvolution2D, UpSampling2D
 import numpy as np
 
-if K.backend == 'tensorflow'
+if K.backend == 'tensorflow':
     K.set_image_dim_ordering('th')
 
 
@@ -233,7 +233,7 @@ def g_vae(in_ch, out_ch, nf, latent_dim, is_binary=False, name='vae'):
     def sampling(args):
         z_mean, z_log_var = args
         
-        if K.backend == 'tensorflow'
+        if K.backend == 'tensorflow':
             batch_size = K.shape(z_mean)[0]
         else:
             batch_size = z_mean.shape[0]
