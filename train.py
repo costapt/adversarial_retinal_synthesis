@@ -427,11 +427,15 @@ if __name__ == '__main__':
     if not params.pix2pix:
         vae = m.g_vae(params.a_ch, params.a_ch, params.nfatoa, params.latent_dim,
                       is_binary=params.is_a_binary)
-    graph1 = K.get_session().graph
+    
+    if K.backend == 'tensorflow':
+        graph1 = K.get_session().graph
 
     # Define the discriminator
     d = m.discriminator(params.a_ch, params.b_ch, params.nfd, opt=dopt)
-    graph2 = K.get_session().graph
+    
+    if K.backend == 'tensorflow':
+        graph2 = K.get_session().graph
 
     if params.continue_train:
         load_weights(vae, unet, d, log_dir=params.log_dir, expt_name=params.expt_name)
