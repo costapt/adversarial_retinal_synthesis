@@ -72,9 +72,12 @@ def discriminator_generator(it, g, dout_size=(16, 16)):
     # Sample fake and real pairs
     for a, b in it:
         a_fake = a
-        with graph1.as_default():
+        if K.backend == 'tensorflow':
+            with graph1.as_default():
+                b_fake = g.predict(a_fake)
+        else:
             b_fake = g.predict(a_fake)
-        
+            
         a_real, b_real = next(it)
 
         # Concatenate the channels. Images become (ch_a + ch_b) x 256 x 256
@@ -104,8 +107,11 @@ def train_discriminator(d, it, batch_size=20):
 def code_discriminator_generator(it, encoder, dout_size=(16, 16)):
     """Define a generator that produces data for the full generator network."""
     for a, _ in it:
-        with graph2.as_default():
-            z_fake = encoder.predict(a)
+        if K.backend == 'tensorflow':
+            with graph2.as_default():
+                z_fake = encoder.predict(a)
+        else:
+            z_fake = encoder.predict(a)            
             
         z_real = np.random.normal(loc=0., scale=1., size=z_fake.shape)
 
@@ -430,12 +436,16 @@ if __name__ == '__main__':
     
     if K.backend == 'tensorflow':
         graph1 = K.get_session().graph
+    else:
+        graph1 = None
 
     # Define the discriminator
     d = m.discriminator(params.a_ch, params.b_ch, params.nfd, opt=dopt)
     
     if K.backend == 'tensorflow':
         graph2 = K.get_session().graph
+    else:
+        graph1 = None        
 
     if params.continue_train:
         load_weights(vae, unet, d, log_dir=params.log_dir, expt_name=params.expt_name)
