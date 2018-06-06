@@ -8,6 +8,10 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Activation, Flatten, Reshape, Dropout
 from keras.layers.convolutional import Convolution2D, Deconvolution2D, UpSampling2D
+import numpy as np
+
+if K.backend == 'tensorflow':
+    K.set_image_dim_ordering('th')
 
 
 def Convolution(f, k=3, s=2, border_mode='same', **kwargs):
@@ -228,8 +232,13 @@ def g_vae(in_ch, out_ch, nf, latent_dim, is_binary=False, name='vae'):
 
     def sampling(args):
         z_mean, z_log_var = args
-        epsilon = K.random_normal(shape=(z_mean.shape[0], latent_dim),
-                                  mean=0., std=1.)
+        
+        if K.backend == 'tensorflow':
+            batch_size = K.shape(z_mean)[0]
+        else:
+            batch_size = z_mean.shape[0]
+            
+        epsilon = K.random_normal(shape=(batch_size, latent_dim), mean=0., std=1.)
         return z_mean + K.exp(z_log_var / 2) * epsilon
 
     z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
@@ -489,7 +498,7 @@ def pix2pix2pix(vae, atob, d, code_d, a_ch, b_ch, alpha=100, beta=100, is_a_bina
         else:
             L_atob = K.mean(K.abs(b_flat - bp_flat))
 
-        L_code = objectives.binary_crossentropy(1, code_d(z))
+        L_code = objectives.binary_crossentropy(np.asarray(1).astype('float32').reshape((-1, 1)), code_d(z))
 
         return L_adv + beta*L_atoa + alpha*L_atob + L_code
 

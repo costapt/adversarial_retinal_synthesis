@@ -10,6 +10,7 @@ from tqdm import tqdm
 from keras.optimizers import Adam
 from util.data import TwoImageIterator
 from util.util import MyDict, log, save_weights, load_weights, load_losses, create_expt_dir
+from keras import backend as K
 
 
 def print_help():
@@ -71,8 +72,12 @@ def discriminator_generator(it, g, dout_size=(16, 16)):
     # Sample fake and real pairs
     for a, b in it:
         a_fake = a
-        b_fake = g.predict(a_fake)
-
+        if K.backend == 'tensorflow':
+            with graph1.as_default():
+                b_fake = g.predict(a_fake)
+        else:
+            b_fake = g.predict(a_fake)
+            
         a_real, b_real = next(it)
 
         # Concatenate the channels. Images become (ch_a + ch_b) x 256 x 256
@@ -102,8 +107,12 @@ def train_discriminator(d, it, batch_size=20):
 def code_discriminator_generator(it, encoder, dout_size=(16, 16)):
     """Define a generator that produces data for the full generator network."""
     for a, _ in it:
-        z_fake = encoder.predict(a)
-
+        if K.backend == 'tensorflow':
+            with graph2.as_default():
+                z_fake = encoder.predict(a)
+        else:
+            z_fake = encoder.predict(a)            
+            
         z_real = np.random.normal(loc=0., scale=1., size=z_fake.shape)
 
         # concatenate fake and real pairs
@@ -344,6 +353,11 @@ def train(models, it_train, it_val, params):
                 log_dir=params.log_dir, expt_name=params.expt_name)
 
 if __name__ == '__main__':
+    
+    global graph1
+    global graph2
+    # https://github.com/keras-team/keras/issues/2397
+    
     a = sys.argv[1:]
 
     params = MyDict({
@@ -419,9 +433,19 @@ if __name__ == '__main__':
     if not params.pix2pix:
         vae = m.g_vae(params.a_ch, params.a_ch, params.nfatoa, params.latent_dim,
                       is_binary=params.is_a_binary)
+    
+    if K.backend == 'tensorflow':
+        graph1 = K.get_session().graph
+    else:
+        graph1 = None
 
     # Define the discriminator
     d = m.discriminator(params.a_ch, params.b_ch, params.nfd, opt=dopt)
+    
+    if K.backend == 'tensorflow':
+        graph2 = K.get_session().graph
+    else:
+        graph1 = None        
 
     if params.continue_train:
         load_weights(vae, unet, d, log_dir=params.log_dir, expt_name=params.expt_name)
